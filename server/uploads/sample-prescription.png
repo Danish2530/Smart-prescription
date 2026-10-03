@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" style="background:#ffffff;font-family:Arial,sans-serif;">
+    <rect width="600" height="800" fill="#ffffff" stroke="#e2e8f0" stroke-width="4"/>
+    <rect x="20" y="20" width="560" height="120" fill="#f0f9ff" rx="8"/>
+    <text x="40" y="55" font-size="22" font-weight="bold" fill="#0369a1">APOLLO CLINIC &amp; HEALTHCARE</text>
+    <text x="40" y="80" font-size="14" fill="#0284c7">Dr. S. Mehta, MBBS, MD (General Medicine)</text>
+    <text x="40" y="102" font-size="12" fill="#64748b">Reg No: MC-49201 | Ph: +91 98765 43210</text>
+    <line x1="20" y1="160" x2="580" y2="160" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="40" y="190" font-size="14" font-weight="bold" fill="#334155">Patient: Rahul Sharma</text>
+    <text x="320" y="190" font-size="14" fill="#334155">Age: 38 Yrs | Male</text>
+    <text x="40" y="215" font-size="13" fill="#64748b">Date: 9/29/2026</text>
+    <text x="40" y="260" font-size="30" font-weight="bold" fill="#0284c7" font-style="italic">Rx</text>
+    <!-- Med 1 -->
+    <rect x="35" y="280" width="530" height="100" fill="#f8fafc" stroke="#e2e8f0" rx="6"/>
+    <text x="50" y="310" font-size="16" font-weight="bold" fill="#0f172a">1. Amoxicillin 500 mg (Tablet)</text>
+    <text x="70" y="335" font-size="14" fill="#334155">Take 1 tablet three times daily (TID)</text>
+    <text x="70" y="360" font-size="13" fill="#64748b">Duration: 5 days | Take after meals with plenty of water</text>
+    <!-- Med 2 -->
+    <rect x="35" y="400" width="530" height="100" fill="#f8fafc" stroke="#e2e8f0" rx="6"/>
+    <text x="50" y="430" font-size="16" font-weight="bold" fill="#0f172a">2. Pantoprazole 40 mg (Tablet)</text>
+    <text x="70" y="455" font-size="14" fill="#334155">Take 1 tablet once daily (OD)</text>
+    <text x="70" y="480" font-size="13" fill="#64748b">Duration: 5 days | Take before breakfast on empty stomach</text>
+    <!-- Advice -->
+    <text x="40" y="540" font-size="13" font-weight="bold" fill="#0f172a">Instructions &amp; Advice:</text>
+    <text x="40" y="565" font-size="13" fill="#64748b">• Complete the entire course of antibiotics as directed.</text>
+    <text x="40" y="585" font-size="13" fill="#64748b">• Drink adequate fluids and maintain rest.</text>
+    <!-- Signature -->
+    <line x1="380" y1="710" x2="540" y2="710" stroke="#0f172a" stroke-width="1"/>
+    <text x="400" y="730" font-size="13" font-weight="bold" fill="#0f172a">Dr. S. Mehta</text>
+    <text x="400" y="748" font-size="11" fill="#64748b">Authorized Medical Practitioner</text>
+  </svg>
