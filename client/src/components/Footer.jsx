@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-start gap-3">
           <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <p className="text-slate-600 text-xs leading-relaxed">
-            <strong className="text-slate-800 font-semibold">Medical Safety Notice:</strong> MedSync is a medication management and schedule reminder assistant. It does not replace professional medical judgment, diagnosis, or clinical prescription. Always verify prescriptions with your registered physician or pharmacist before modifying medication routines.
+            <strong className="text-slate-800 font-semibold">Medical Safety Notice:</strong> PRESCRIPTO is a digital healthcare platform providing doctor discovery, appointment queues, telehealth, and medication adherence assistance. It does not replace professional medical judgment, diagnosis, or clinical emergency care. Always consult certified physicians for acute medical conditions.
           </p>
         </div>
 
@@ -17,11 +17,11 @@ export default function Footer() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span className="font-medium text-slate-700">
-              Smart Medication Adherence System — Production Hackathon MVP
+              PRESCRIPTO — AI-Powered Digital Healthcare Platform
             </span>
           </div>
           <div className="text-slate-400">
-            &copy; {new Date().getFullYear()} MedSync Health. All rights reserved.
+            &copy; {new Date().getFullYear()} PRESCRIPTO Health. All rights reserved.
           </div>
         </div>
       </div>

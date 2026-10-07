@@ -12,6 +12,11 @@ import prescriptionRoutes from './routes/prescriptionRoutes.js';
 import medicationRoutes from './routes/medicationRoutes.js';
 import doseRoutes from './routes/doseRoutes.js';
 import adherenceRoutes from './routes/adherenceRoutes.js';
+import doctorRoutes from './routes/doctorRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
+import queueRoutes from './routes/queueRoutes.js';
+import videoRoutes from './routes/videoRoutes.js';
+import healthChatRoutes from './routes/healthChatRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,17 +42,24 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
-    service: 'Smart Medication Adherence System API',
+    service: 'PRESCRIPTO - AI-Powered Digital Healthcare Platform API',
     timestamp: new Date().toISOString(),
   });
 });
 
-// Mount API routes
+// Mount existing API routes (preserved)
 app.use('/api/auth', authRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/doses', doseRoutes);
 app.use('/api/adherence', adherenceRoutes);
+
+// Mount new PRESCRIPTO API routes
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/queue', queueRoutes);
+app.use('/api/video', videoRoutes);
+app.use('/api/health-chat', healthChatRoutes);
 
 // Catch-all 404 handler
 app.use((req, res, next) => {

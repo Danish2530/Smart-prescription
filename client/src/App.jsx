@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ReminderModal from './components/ReminderModal';
 
+// Existing Pages (Preserved)
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -19,6 +20,19 @@ import MedicationsPage from './pages/MedicationsPage';
 import MedicationDetailPage from './pages/MedicationDetailPage';
 import SchedulePage from './pages/SchedulePage';
 import AdherenceDashboardPage from './pages/AdherenceDashboardPage';
+
+// New PRESCRIPTO Healthcare Pages
+import FindDoctorPage from './pages/FindDoctorPage';
+import DoctorProfilePage from './pages/DoctorProfilePage';
+import AppointmentsPage from './pages/AppointmentsPage';
+import VideoConsultationPage from './pages/VideoConsultationPage';
+import AIHealthAssistantPage from './pages/AIHealthAssistantPage';
+import ProfilePage from './pages/ProfilePage';
+
+// New Doctor Console Pages
+import DoctorDashboardPage from './pages/DoctorDashboardPage';
+import DoctorAppointmentsPage from './pages/DoctorAppointmentsPage';
+import DoctorAvailabilityPage from './pages/DoctorAvailabilityPage';
 
 export default function App() {
   return (
@@ -34,7 +48,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                {/* Protected Patient Routes */}
+                {/* Patient Routes (Protected) */}
                 <Route
                   path="/dashboard"
                   element={
@@ -43,6 +57,84 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+
+                {/* PRESCRIPTO Doctor Discovery & Booking */}
+                <Route
+                  path="/doctors"
+                  element={
+                    <ProtectedRoute>
+                      <FindDoctorPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/doctors/:id"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/appointments"
+                  element={
+                    <ProtectedRoute>
+                      <AppointmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/video-consultation/:appointmentId"
+                  element={
+                    <ProtectedRoute>
+                      <VideoConsultationPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/health-assistant"
+                  element={
+                    <ProtectedRoute>
+                      <AIHealthAssistantPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Doctor Admin Console (Protected) */}
+                <Route
+                  path="/doctor/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/doctor/appointments"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorAppointmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/doctor/availability"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorAvailabilityPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Existing Prescription & Medication Pipeline (Untouched) */}
                 <Route
                   path="/prescriptions"
                   element={

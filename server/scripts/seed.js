@@ -9,6 +9,7 @@ import User from '../models/User.js';
 import Prescription from '../models/Prescription.js';
 import Medication from '../models/Medication.js';
 import Dose from '../models/Dose.js';
+import { seedDoctors } from './seedDoctors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -325,6 +326,9 @@ Doctor's Signature: Dr. S. Mehta`;
     console.log(`Doses summary -> Evaluated: ${totalEvaluated.length}, Taken: ${finalTaken}, Missed: ${finalMissed}, Rate: ${finalAdherence}%`);
     console.log(`Today's Doses -> ${doses.filter((d) => d.scheduledDate.getTime() === today.getTime()).length}`);
 
+    await seedDoctors();
+
+    console.log(`[Full Seed Completed Successfully]!`);
     await mongoose.disconnect();
     process.exit(0);
   } catch (error) {

@@ -15,7 +15,7 @@ const generateToken = (id) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, role } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -40,6 +40,7 @@ export const register = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       phone: phone || '',
+      role: role && ['doctor', 'admin', 'patient'].includes(role) ? role : 'patient',
     });
 
     const token = generateToken(user._id);
@@ -52,6 +53,7 @@ export const register = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role || 'patient',
         createdAt: user.createdAt,
       },
     });
@@ -104,6 +106,7 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role || 'patient',
         createdAt: user.createdAt,
       },
     });
@@ -129,6 +132,7 @@ export const getMe = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role || 'patient',
         createdAt: user.createdAt,
       },
     });
