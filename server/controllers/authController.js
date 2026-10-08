@@ -15,7 +15,10 @@ const generateToken = (id) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    // IMPORTANT:
+    // Public registration can ONLY create patient accounts.
+    // Do not accept role from the request body.
+    const { name, email, password, phone } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -24,7 +27,10 @@ export const register = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -35,12 +41,13 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Public registration ALWAYS creates a patient.
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
-      phone: phone || '',
-      role: role && ['doctor', 'admin', 'patient'].includes(role) ? role : 'patient',
+      phone: phone?.trim() || '',
+      role: 'patient',
     });
 
     const token = generateToken(user._id);
@@ -53,12 +60,13 @@ export const register = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role || 'patient',
+        role: user.role,
         createdAt: user.createdAt,
       },
     });
   } catch (error) {
     console.error('Registration error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during registration. Please try again.',
@@ -66,7 +74,7 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Login patient
+// @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
 export const login = async (req, res) => {
@@ -80,7 +88,10 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -89,6 +100,7 @@ export const login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -112,6 +124,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Server error during login. Please try again.',
@@ -125,6 +138,14 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
+
     res.json({
       success: true,
       user: {
@@ -137,6 +158,8 @@ export const getMe = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Get profile error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Unable to retrieve user profile.',

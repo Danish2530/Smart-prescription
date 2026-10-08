@@ -2,140 +2,306 @@ import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 
 /**
- * AI Health Assistant Service (PRESCRIPTO)
+ * PRESCRIPTO AI Health Assistant
  *
- * Distinct and isolated from the prescription extraction pipeline.
- * Designed exclusively for patient educational inquiries, medication terminology,
- * scheduling explanations, and general wellness guidance.
- *
- * Strict Guardrails:
- * - Never diagnoses illnesses
- * - Never prescribes or alters medication dosages
- * - Instructs emergency cases to seek immediate emergency care
- * - Includes mandatory medical disclaimer
+ * Fast architecture:
+ * 1. Emergency detection
+ * 2. Instant deterministic answers for common questions
+ * 3. Gemini only for questions that actually need AI
+ * 4. Fast fallback if Gemini is unavailable
  */
 class HealthChatService {
   constructor() {
     this.ai = null;
+
     if (process.env.AI_API_KEY && process.env.AI_API_KEY.trim() !== '') {
       try {
         this.ai = new GoogleGenAI({
           apiKey: process.env.AI_API_KEY,
         });
       } catch (err) {
-        console.warn('[HealthChatService] Unable to init GoogleGenAI:', err.message);
+        console.warn(
+          '[HealthChatService] Unable to init GoogleGenAI:',
+          err.message
+        );
       }
     }
   }
 
+  /**
+   * System instructions for Gemini.
+   *
+   * Kept separate from the user message so Gemini receives
+   * the instructions through the proper systemInstruction field.
+   */
   getSystemInstructions() {
     return `
-You are PRESCRIPTO's AI Health Assistant — a friendly, accurate, and safety-conscious digital health companion.
+You are PRESCRIPTO's AI Health Assistant.
 
-YOUR PURPOSE:
-- Help patients understand medical and prescription terminology (e.g., BID, TID, OD, PRN, AC, PC).
-- Explain general medication instructions (e.g., "Take after meals", "Take on an empty stomach", hydration, proper storage).
-- Explain general health concepts, wellness advice, and routine medication management.
-- Help users understand their schedule concepts clearly.
+Your job is to provide concise, educational health and medication information.
 
-STRICT MEDICAL & ETHICAL GUARDRAILS (ZERO TOLERANCE):
-1. NEVER diagnose diseases or conditions. If a user describes symptoms, explain general potential causes neutrally and advise consulting a qualified physician.
-2. NEVER prescribe drugs or recommend specific prescription medications.
-3. NEVER instruct a user to change, stop, increase, or decrease their prescribed medication dosage.
-4. If a user mentions emergency warning signs (severe chest pain, shortness of breath, stroke symptoms, uncontrolled bleeding, sudden confusion, severe allergic reaction), immediately advise them to contact emergency medical services (e.g., 911 / 108 / 112) or go to the nearest emergency room.
-5. ALWAYS conclude with or include the standard disclaimer: "I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice."
+STRICT SAFETY RULES:
+1. Never diagnose diseases.
+2. Never prescribe medicines.
+3. Never tell users to change, stop, increase, or decrease medication doses.
+4. For emergency symptoms such as severe chest pain, difficulty breathing,
+   stroke symptoms, uncontrolled bleeding, sudden confusion, or severe
+   allergic reactions, tell the user to seek emergency medical care immediately.
+5. Do not replace a doctor or pharmacist.
+6. Keep responses concise and practical.
+7. Always include:
+"I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice."
 `;
   }
 
   /**
-   * Deterministic educational fallback when AI API is unavailable or rate-limited
+   * Fast emergency detection.
+   *
+   * This happens BEFORE Gemini.
    */
-  getEducationalFallback(query) {
-    const q = query.toLowerCase();
+  isEmergencyQuery(query) {
+  return /severe chest pain|crushing chest pain|cannot breathe|can't breathe|difficulty breathing|severe shortness of breath|stroke symptoms|face drooping|sudden weakness|sudden confusion|uncontrolled bleeding|severe bleeding|unconscious|passed out|severe allergic reaction|anaphylaxis/i.test(
+    query
+  );
+}
 
-    if (/bid|twice a day|twice daily/i.test(q)) {
-      return `**BID** stands for *"Bis in Die"* in Latin, meaning **twice a day**.\n\nUsually, this means taking the dose approximately 12 hours apart (e.g., 8:00 AM and 8:00 PM) to maintain steady levels of the medication in your body throughout the day.\n\n*Disclaimer: I am an AI assistant, not a doctor. Please follow your physician's specific instructions.*`;
+  /**
+   * Instant responses for common medication terminology.
+   *
+   * These responses never call Gemini.
+   */
+  getFastAnswer(query) {
+    const q = query.toLowerCase().trim();
+
+    if (
+      /\bbid\b/.test(q) ||
+      /twice a day/.test(q) ||
+      /twice daily/.test(q)
+    ) {
+      return `**BID** stands for *"Bis in Die"*, meaning **twice a day**.
+
+It generally means taking the medication two times during the day, with the exact timing depending on your prescription.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/tid|three times a day|3 times daily|three times daily/i.test(q)) {
-      return `**TID** stands for *"Ter in Die"* in Latin, meaning **three times a day**.\n\nGenerally, doses are spaced roughly 8 hours apart (e.g., morning around 8:00 AM, afternoon around 2:00 PM, and night around 8:00 PM) or taken with breakfast, lunch, and dinner if directed with meals.\n\n*Disclaimer: I am an AI assistant, not a doctor. Please confirm exact timing with your doctor or pharmacist.*`;
+    if (
+      /\btid\b/.test(q) ||
+      /three times a day/.test(q) ||
+      /three times daily/.test(q)
+    ) {
+      return `**TID** stands for *"Ter in Die"*, meaning **three times a day**.
+
+It generally means taking the medication three times during the day. Follow the timing specified by your doctor or pharmacist.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/od|once a day|once daily/i.test(q)) {
-      return `**OD** stands for *"Omne in Die"* in Latin, meaning **once daily**.\n\nIt is best taken at the same consistent hour every day (e.g., every morning with breakfast or every evening at bedtime) for optimum consistency.\n\n*Disclaimer: I am an AI assistant, not a doctor. Always consult your healthcare provider.*`;
+    if (
+      /\bod\b/.test(q) ||
+      /once a day/.test(q) ||
+      /once daily/.test(q)
+    ) {
+      return `**OD** generally means **once daily**.
+
+This means the medication is taken once each day. Follow the exact timing provided on your prescription.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/qid|four times a day|4 times daily/i.test(q)) {
-      return `**QID** stands for *"Quater in Die"*, meaning **four times a day**.\n\nThese doses are typically spaced approximately 4 to 6 hours apart during waking hours (e.g., 8 AM, 12 PM, 4 PM, 8 PM).\n\n*Disclaimer: I am an AI assistant, not a doctor. Consult your physician for exact schedules.*`;
+    if (
+      /\bqid\b/.test(q) ||
+      /four times a day/.test(q) ||
+      /four times daily/.test(q)
+    ) {
+      return `**QID** means **four times a day**.
+
+The exact timing should follow the instructions provided by your doctor or pharmacist.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/prn|sos|as needed|when required/i.test(q)) {
-      return `**PRN** stands for *"Pro Re Nata"* (or **SOS** *"Si Opus Sit"*), which means **take as needed or when required**.\n\nThese medicines (such as pain relievers or anti-nausea meds) are not on a rigid schedule, but have strict maximum daily limits and minimum gap times between doses specified by your doctor.\n\n*Disclaimer: I am an AI assistant, not a doctor. Never exceed your doctor's prescribed maximum daily limit.*`;
+    if (
+      /\bprn\b/.test(q) ||
+      /\bsos\b/.test(q) ||
+      /as needed/.test(q) ||
+      /when required/.test(q)
+    ) {
+      return `**PRN** means **"as needed"** or **"when required"**.
+
+It means the medication is not necessarily taken at a fixed time. You should still follow the maximum dose and minimum interval specified by your doctor or medication label.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/before meal|empty stomach|ac\b/i.test(q)) {
-      return `**Before Meals (AC - Ante Cibum / Empty Stomach)**:\n\nTaking medication on an empty stomach typically means taking it **at least 30 to 60 minutes before eating**, or **2 hours after a meal**.\n\nThis ensures stomach acid or food components do not degrade the medicine or impede absorption.\n\n*Disclaimer: I am an AI assistant, not a doctor. Always check your medicine label.*`;
+    if (
+      /before meals/.test(q) ||
+      /before meal/.test(q) ||
+      /empty stomach/.test(q) ||
+      /\bac\b/.test(q)
+    ) {
+      return `**Before meals / AC** generally means taking the medication before eating.
+
+The exact timing depends on the medication, so follow the instructions on your prescription or medication label.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/after meal|with food|pc\b/i.test(q)) {
-      return `**After Meals (PC - Post Cibum / With Food)**:\n\nTaking medication after meals means taking it **immediately after or within 15–30 minutes of eating a meal or snack**.\n\nThis helps minimize stomach irritation and can improve absorption for certain medications.\n\n*Disclaimer: I am an AI assistant, not a doctor. Consult your healthcare provider for personalized guidance.*`;
+    if (
+      /after meals/.test(q) ||
+      /after meal/.test(q) ||
+      /with food/.test(q) ||
+      /\bpc\b/.test(q)
+    ) {
+      return `**After meals / PC** generally means taking the medication after eating.
+
+Follow the specific timing provided by your doctor or pharmacist.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
     }
 
-    if (/chest pain|heart attack|stroke|difficulty breathing|shortness of breath|severe bleeding/i.test(q)) {
-      return `⚠️ **EMERGENCY WARNING**\n\nThe symptoms you mentioned may indicate a critical medical emergency. Please seek immediate medical attention by calling emergency services (such as 911 / 108 / 112) or visiting the nearest hospital emergency room immediately.\n\n*Do not wait or rely on online health tools during emergencies.*`;
-    }
-
-    return `Hello! As your PRESCRIPTO AI Health Assistant, I can help you understand medical abbreviations (like BID, TID, OD, PRN), medication administration tips (before/after meals, hydration), and general wellness concepts.\n\nFor questions about specific medical diagnoses, treatments, or dosage adjustments, please book a consultation with one of our certified doctors on PRESCRIPTO.\n\n*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician for medical advice.*`;
+    return null;
   }
 
   /**
-   * Process patient health message and generate safe, educational response
+   * Emergency response.
+   */
+  getEmergencyResponse() {
+    return `⚠️ **EMERGENCY WARNING**
+
+The symptoms you mentioned may indicate a medical emergency.
+
+Please call emergency services (such as **112 / 108**) or go to the nearest emergency department immediately.
+
+Do not wait for an online health assistant during an emergency.
+
+*Disclaimer: I am an AI assistant, not a doctor.*`;
+  }
+
+  /**
+   * Generic fallback if Gemini is unavailable.
+   */
+  getEducationalFallback(query) {
+    return `I can help with general medication terminology, prescription instructions, and basic health education.
+
+For questions involving a diagnosis, treatment decision, or medication change, please consult a qualified doctor or pharmacist.
+
+*Disclaimer: I am an AI assistant, not a doctor. Please consult your physician or pharmacist for medical advice.*`;
+  }
+
+  /**
+   * Ask Gemini for questions that require actual AI reasoning.
+   */
+  async askGemini(message) {
+    if (!this.ai) {
+      return null;
+    }
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: message,
+              },
+            ],
+          },
+        ],
+
+        config: {
+          systemInstruction: this.getSystemInstructions(),
+
+          temperature: 0.2,
+
+          // Keep responses short and therefore faster.
+          maxOutputTokens: 500,
+        },
+      });
+
+      const reply =
+        response.text ||
+        response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (reply && reply.trim()) {
+        return reply.trim();
+      }
+
+      return null;
+    } catch (error) {
+      console.warn(
+        '[HealthChatService] Gemini error:',
+        error.message
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Main health query processor.
    */
   async processHealthQuery(message, conversationHistory = []) {
-    if (!message || typeof message !== 'string' || message.trim() === '') {
+    if (
+      !message ||
+      typeof message !== 'string' ||
+      !message.trim()
+    ) {
       throw new Error('Please provide a question or message.');
     }
 
     const trimmedMsg = message.trim();
 
-    // Check for obvious emergency keywords first
-    if (/severe chest pain|cannot breathe|difficulty breathing|stroke symptoms|face drooping/i.test(trimmedMsg)) {
+    /*
+     * STEP 1
+     * Emergency check.
+     *
+     * Never send obvious emergencies to Gemini first.
+     */
+    if (this.isEmergencyQuery(trimmedMsg)) {
       return {
-        reply: `⚠️ **EMERGENCY WARNING**:\n\nThe symptoms you mentioned may indicate an acute medical emergency. Please call emergency services (such as 911, 112, or 108) or go to the nearest emergency department immediately.\n\n*Disclaimer: I am an AI assistant, not a doctor.*`,
+        reply: this.getEmergencyResponse(),
         isEmergency: true,
       };
     }
 
+    /*
+     * STEP 2
+     * Instant knowledge base.
+     *
+     * This is the biggest speed improvement.
+     */
+    const fastAnswer = this.getFastAnswer(trimmedMsg);
+
+    if (fastAnswer) {
+      return {
+        reply: fastAnswer,
+        isEmergency: false,
+      };
+    }
+
+    /*
+     * STEP 3
+     * Gemini for more complex questions.
+     */
     if (this.ai) {
-      try {
-        const contents = [
-          {
-            role: 'user',
-            parts: [{ text: `${this.getSystemInstructions()}\n\nPatient question: ${trimmedMsg}` }],
-          },
-        ];
+      const aiReply = await this.askGemini(trimmedMsg);
 
-        const response = await this.ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents,
-          config: {
-            temperature: 0.3,
-          },
-        });
-
-        const reply = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply && reply.trim()) {
-          return {
-            reply: reply.trim(),
-            isEmergency: false,
-          };
-        }
-      } catch (err) {
-        console.warn('[HealthChatService] Gemini call encountered error:', err.message);
+      if (aiReply) {
+        return {
+          reply: aiReply,
+          isEmergency: false,
+        };
       }
     }
 
-    // Graceful fallback to deterministic medical knowledge base
+    /*
+     * STEP 4
+     * Safe fallback.
+     */
     return {
       reply: this.getEducationalFallback(trimmedMsg),
       isEmergency: false,

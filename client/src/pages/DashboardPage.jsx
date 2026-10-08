@@ -138,7 +138,7 @@ export default function DashboardPage() {
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-blue-200">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>PRESCRIPTO HERO USP • DIGITAL HEALTHCARE</span>
+            <span>PRESCRIPTO • DIGITAL HEALTHCARE</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">

@@ -9,12 +9,14 @@ import {
   Building2,
   ChevronRight,
   ShieldCheck,
+
 } from 'lucide-react';
 import TrafficBadge from './TrafficBadge';
 
 export default function DoctorCard({ doctor, onBookClick }) {
   const {
     _id,
+    id,
     name,
     specialization,
     qualification,
@@ -26,8 +28,18 @@ export default function DoctorCard({ doctor, onBookClick }) {
     reviewCount,
     status,
     videoConsultationAvailable,
+    distanceKm,
     liveQueue = {},
+    queue = {},
   } = doctor;
+
+  const doctorId = _id || id;
+  const effectiveQueue = {
+    trafficLevel: liveQueue.trafficLevel || queue.traffic || queue.trafficLevel || 'LOW',
+    patientsWaiting: liveQueue.patientsWaiting ?? queue.patientsAhead ?? queue.patientsWaiting ?? 0,
+    estimatedWaitMinutes: liveQueue.estimatedWaitMinutes ?? queue.estimatedWaitMinutes ?? 5,
+    nextAvailableSlot: liveQueue.nextAvailableSlot || queue.nextAvailableSlot || 'Today 10:00 AM',
+  };
 
   const isAvailable = status === 'AVAILABLE';
   const isBusy = status === 'BUSY';
@@ -110,7 +122,7 @@ export default function DoctorCard({ doctor, onBookClick }) {
         </div>
 
         {/* Clinic info */}
-        <div className="space-y-1.5 text-xs text-slate-500 mb-4">
+        <div className="space-y-1.5 text-xs text-slate-500 mb-3">
           <div className="flex items-start gap-1.5">
             <Building2 className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
             <span className="font-medium text-slate-700 line-clamp-1">{clinicName}</span>
@@ -121,12 +133,22 @@ export default function DoctorCard({ doctor, onBookClick }) {
           </div>
         </div>
 
+        {/* Distance Badge */}
+        {distanceKm !== undefined && distanceKm !== null && (
+          <div className="flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl bg-blue-50/90 border border-blue-200/80 text-xs">
+            <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+            <span className="font-bold text-blue-700">
+              {distanceKm} km away
+            </span>
+          </div>
+        )}
+
         {/* Live Patient Traffic Section */}
         <div className="mb-4">
           <TrafficBadge
-            trafficLevel={liveQueue.trafficLevel || 'LOW'}
-            patientsWaiting={liveQueue.patientsWaiting || 0}
-            estimatedWaitMinutes={liveQueue.estimatedWaitMinutes || 10}
+            trafficLevel={effectiveQueue.trafficLevel}
+            patientsWaiting={effectiveQueue.patientsWaiting}
+            estimatedWaitMinutes={effectiveQueue.estimatedWaitMinutes}
           />
         </div>
 
@@ -134,7 +156,7 @@ export default function DoctorCard({ doctor, onBookClick }) {
         <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-slate-50 border border-slate-100">
           <div className="flex items-center gap-1.5 text-slate-700 font-medium">
             <Calendar className="w-3.5 h-3.5 text-blue-600" />
-            <span>Next: <strong className="text-slate-900">{liveQueue.nextAvailableSlot || '11:30 AM'}</strong></span>
+            <span>Next: <strong className="text-slate-900">{effectiveQueue.nextAvailableSlot}</strong></span>
           </div>
 
           {videoConsultationAvailable ? (
@@ -151,7 +173,7 @@ export default function DoctorCard({ doctor, onBookClick }) {
       {/* Footer CTAs */}
       <div className="px-5 py-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center gap-2">
         <Link
-          to={`/doctors/${_id}`}
+          to={`/doctors/${doctorId}`}
           className="flex-1 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs text-center transition shadow-2xs"
         >
           View Doctor

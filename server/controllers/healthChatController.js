@@ -1,32 +1,44 @@
 import healthChatService from '../services/healthChatService.js';
 
-// @desc    Process patient query with AI Health Assistant
+// @desc    Ask the AI Health Assistant
 // @route   POST /api/health-chat
-// @access  Public or Private (can be used by all users)
+// @access  Private
 export const askHealthAssistant = async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message } = req.body;
 
-    if (!message || typeof message !== 'string') {
+    if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'A message query is required.',
+        message: 'Please provide a health-related question.',
       });
     }
 
-    const result = await healthChatService.processHealthQuery(message, history || []);
+    const trimmedMessage = message.trim();
 
-    res.json({
+    if (trimmedMessage.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Your question is too long. Please keep it under 2000 characters.',
+      });
+    }
+
+    const result = await healthChatService.processHealthQuery(
+      trimmedMessage
+    );
+
+    return res.status(200).json({
       success: true,
       reply: result.reply,
-      isEmergency: result.isEmergency,
-      timestamp: new Date().toISOString(),
+      isEmergency: result.isEmergency || false,
     });
   } catch (error) {
-    console.error('Health assistant error:', error);
-    res.status(500).json({
+    console.error('[HealthChatController] Error:', error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Unable to process health inquiry at this moment.',
+      message: 'Unable to process your health question right now.',
     });
   }
 };

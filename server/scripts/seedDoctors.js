@@ -21,8 +21,15 @@ const demoDoctors = [
     qualification: 'MBBS, MD (Internal Medicine)',
     experience: 8,
     clinicName: 'City Care Clinic',
-    clinicAddress: '12 Sector 4, Connaught Place, New Delhi',
-    city: 'New Delhi',
+    clinicAddress: '12 Rajpur Road, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8695, 30.3366], // [longitude, latitude] Dehradun
+      address: '12 Rajpur Road, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 500,
     averageConsultationMinutes: 12,
     rating: 4.8,
@@ -30,9 +37,11 @@ const demoDoctors = [
     status: 'AVAILABLE',
     videoConsultationAvailable: true,
     languages: ['English', 'Hindi'],
-    about: 'Experienced internal medicine specialist focusing on evidence-based primary care, preventive wellness, and routine family medicine.',
-    waitingPatientCount: 3, // ~20 min wait
+    about:
+      'Experienced internal medicine specialist focusing on evidence-based primary care, preventive wellness, and routine family medicine.',
+    waitingPatientCount: 3,
   },
+
   {
     name: 'Dr. Priya Verma',
     email: 'doctor.priya@prescripto.com',
@@ -40,8 +49,15 @@ const demoDoctors = [
     qualification: 'MBBS, MD (Dermatology & Venereology)',
     experience: 11,
     clinicName: 'Skin & Aesthetics Center',
-    clinicAddress: '45 Defense Colony, South Delhi',
-    city: 'New Delhi',
+    clinicAddress: '45 Chakrata Road, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8780, 30.3420], // [longitude, latitude] Dehradun
+      address: '45 Chakrata Road, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 700,
     averageConsultationMinutes: 15,
     rating: 4.9,
@@ -49,9 +65,11 @@ const demoDoctors = [
     status: 'BUSY',
     videoConsultationAvailable: true,
     languages: ['English', 'Hindi', 'Punjabi'],
-    about: 'Board-certified dermatologist specializing in clinical dermatology, acne management, allergy evaluations, and modern laser therapies.',
-    waitingPatientCount: 8, // ~50 min wait (Moderate)
+    about:
+      'Board-certified dermatologist specializing in clinical dermatology, acne management, allergy evaluations, and modern laser therapies.',
+    waitingPatientCount: 8,
   },
+
   {
     name: 'Dr. Amit Kumar',
     email: 'doctor.amit@prescripto.com',
@@ -59,8 +77,15 @@ const demoDoctors = [
     qualification: 'MBBS, MD, DM (Cardiology)',
     experience: 14,
     clinicName: 'Heart Beat Care Institute',
-    clinicAddress: '88 Apollo Enclave, Saket, New Delhi',
-    city: 'New Delhi',
+    clinicAddress: '88 EC Road, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8610, 30.3290], // [longitude, latitude] Dehradun
+      address: '88 EC Road, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 900,
     averageConsultationMinutes: 20,
     rating: 4.9,
@@ -68,9 +93,11 @@ const demoDoctors = [
     status: 'AVAILABLE',
     videoConsultationAvailable: true,
     languages: ['English', 'Hindi'],
-    about: 'Senior interventional cardiologist with expertise in hypertensive disorders, lipid management, ECG interpretation, and preventive cardiology.',
-    waitingPatientCount: 1, // ~10-20 min wait (Low)
+    about:
+      'Senior interventional cardiologist with expertise in hypertensive disorders, lipid management, ECG interpretation, and preventive cardiology.',
+    waitingPatientCount: 1,
   },
+
   {
     name: 'Dr. Ananya Sen',
     email: 'doctor.ananya@prescripto.com',
@@ -78,8 +105,15 @@ const demoDoctors = [
     qualification: 'MBBS, DCH, DNB (Pediatrics)',
     experience: 7,
     clinicName: 'Little Smiles Child Clinic',
-    clinicAddress: '23 Greenwood Avenue, Vasant Vihar, New Delhi',
-    city: 'New Delhi',
+    clinicAddress: '23 Vasant Vihar, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8860, 30.3330], // [longitude, latitude] Dehradun
+      address: '23 Vasant Vihar, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 600,
     averageConsultationMinutes: 15,
     rating: 4.7,
@@ -87,9 +121,11 @@ const demoDoctors = [
     status: 'AVAILABLE',
     videoConsultationAvailable: true,
     languages: ['English', 'Hindi', 'Bengali'],
-    about: 'Compassionate child health specialist focused on developmental milestones, newborn immunization, nutrition, and pediatric infections.',
-    waitingPatientCount: 4, // Moderate
+    about:
+      'Compassionate child health specialist focused on developmental milestones, newborn immunization, nutrition, and pediatric infections.',
+    waitingPatientCount: 4,
   },
+
   {
     name: 'Dr. Vikram Malhotra',
     email: 'doctor.vikram@prescripto.com',
@@ -97,8 +133,15 @@ const demoDoctors = [
     qualification: 'MBBS, MS (Orthopedics), MCh',
     experience: 16,
     clinicName: 'Apex Bone & Joint Hospital',
-    clinicAddress: '102 Medical Hub, Greater Kailash, New Delhi',
-    city: 'New Delhi',
+    clinicAddress: '102 Ballupur Road, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8530, 30.3440], // [longitude, latitude] Dehradun
+      address: '102 Ballupur Road, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 800,
     averageConsultationMinutes: 15,
     rating: 4.8,
@@ -106,9 +149,11 @@ const demoDoctors = [
     status: 'ON_BREAK',
     videoConsultationAvailable: false,
     languages: ['English', 'Hindi'],
-    about: 'Expert orthopedic surgeon specializing in sports injuries, knee and hip arthroplasty, spinal alignment, and rehabilitation.',
+    about:
+      'Expert orthopedic surgeon specializing in sports injuries, knee and hip arthroplasty, spinal alignment, and rehabilitation.',
     waitingPatientCount: 2,
   },
+
   {
     name: 'Dr. Sneha Reddy',
     email: 'doctor.sneha@prescripto.com',
@@ -116,8 +161,15 @@ const demoDoctors = [
     qualification: 'MBBS, MD, DM (Neurology)',
     experience: 9,
     clinicName: 'NeuroCare Clinic & Diagnostics',
-    clinicAddress: '19 Park Street, Nehru Place, New Delhi',
-    city: 'New Delhi',
+    clinicAddress: '19 Haridwar Road, Dehradun, Uttarakhand',
+    city: 'Dehradun',
+
+    location: {
+      type: 'Point',
+      coordinates: [77.8750, 30.3180], // [longitude, latitude] Dehradun
+      address: '19 Haridwar Road, Dehradun, Uttarakhand',
+    },
+
     consultationFee: 850,
     averageConsultationMinutes: 20,
     rating: 4.9,
@@ -125,8 +177,9 @@ const demoDoctors = [
     status: 'AVAILABLE',
     videoConsultationAvailable: true,
     languages: ['English', 'Hindi', 'Telugu'],
-    about: 'Consultant neurologist with deep focus on migraine management, vertigo, neuromuscular conditions, and cognitive health.',
-    waitingPatientCount: 0, // Low traffic / instant
+    about:
+      'Consultant neurologist with deep focus on migraine management, vertigo, neuromuscular conditions, and cognitive health.',
+    waitingPatientCount: 0,
   },
 ];
 
@@ -199,6 +252,7 @@ export const seedDoctors = async () => {
           clinicName: data.clinicName,
           clinicAddress: data.clinicAddress,
           city: data.city,
+          location: data.location,
           consultationFee: data.consultationFee,
           averageConsultationMinutes: data.averageConsultationMinutes,
           rating: data.rating,
@@ -210,9 +264,28 @@ export const seedDoctors = async () => {
           availableHours: { start: '09:00', end: '18:00' },
         });
       } else {
-        doctor.status = data.status;
-        doctor.averageConsultationMinutes = data.averageConsultationMinutes;
+        doctor.name = data.name;
+        doctor.specialization = data.specialization;
+        doctor.qualification = data.qualification;
+        doctor.experience = data.experience;
+
+        doctor.clinicName = data.clinicName;
+        doctor.clinicAddress = data.clinicAddress;
+        doctor.city = data.city;
+
         doctor.consultationFee = data.consultationFee;
+        doctor.averageConsultationMinutes = data.averageConsultationMinutes;
+
+        doctor.rating = data.rating;
+        doctor.reviewCount = data.reviewCount;
+        doctor.status = data.status;
+
+        doctor.videoConsultationAvailable = data.videoConsultationAvailable;
+        doctor.languages = data.languages;
+        doctor.about = data.about;
+
+        doctor.location = data.location;
+
         await doctor.save();
       }
 

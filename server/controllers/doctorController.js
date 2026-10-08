@@ -305,3 +305,174 @@ export const updateDoctorProfile = async (req, res) => {
     });
   }
 };
+
+// Helper for fallback distance calculation
+const haversineDistanceKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+};
+
+// @desc    Get nearby PRESCRIPTO doctors based on patient coordinates
+// @route   GET /api/doctors/nearby
+// @access  Public
+export const getNearbyDoctors = async (req, res) => {
+  try {
+    const { latitude, longitude, radius, specialization, search, status, videoOnly } = req.query;
+
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both latitude and longitude are required query parameters.',
+      });
+    }
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const radiusMeters = radius ? parseFloat(radius) : 10000;
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid latitude. Must be a valid number between -90 and 90.',
+      });
+    }
+
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid longitude. Must be a valid number between -180 and 180.',
+      });
+    }
+
+    if (isNaN(radiusMeters) || radiusMeters <= 0 || radiusMeters > 500000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid radius. Must be a positive number in meters (max 500000).',
+      });
+    }
+
+    // Build filters
+    const matchQuery = {};
+    if (specialization && specialization !== 'All') {
+      matchQuery.specialization = new RegExp(`^${specialization}$`, 'i');
+    }
+    if (status) {
+      matchQuery.status = status;
+    }
+    if (videoOnly === 'true') {
+      matchQuery.videoConsultationAvailable = true;
+    }
+    if (search) {
+      matchQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { specialization: { $regex: search, $options: 'i' } },
+        { clinicName: { $regex: search, $options: 'i' } },
+        { clinicAddress: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    let rawDoctors = [];
+    try {
+      const geoPipeline = [
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [lng, lat],
+            },
+            distanceField: 'distanceMeters',
+            maxDistance: radiusMeters,
+            spherical: true,
+            query: matchQuery,
+          },
+        },
+        { $sort: { distanceMeters: 1 } },
+      ];
+      rawDoctors = await Doctor.aggregate(geoPipeline);
+    } catch (geoError) {
+      console.warn('GeoNear aggregation failed, using fallback query:', geoError.message);
+      const allDocs = await Doctor.find(matchQuery);
+      rawDoctors = allDocs
+        .map((doc) => {
+          const docObj = doc.toObject();
+          const coords = docObj.location?.coordinates;
+          if (Array.isArray(coords) && coords.length === 2) {
+            const dKm = haversineDistanceKm(lat, lng, coords[1], coords[0]);
+            docObj.distanceMeters = dKm * 1000;
+            return docObj;
+          }
+          return null;
+        })
+        .filter((d) => d !== null && d.distanceMeters <= radiusMeters)
+        .sort((a, b) => a.distanceMeters - b.distanceMeters);
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const enrichedDoctors = await Promise.all(
+      rawDoctors.map(async (doc) => {
+        const distanceKm = Number((doc.distanceMeters / 1000).toFixed(1));
+        
+
+        try {
+          const queueStats = await queueService.getDoctorQueueStats(doc._id, today);
+          return {
+            ...doc,
+            id: doc._id.toString(),
+            distanceKm,
+            queue: {
+              patientsAhead: queueStats.patientsWaiting,
+              estimatedWaitMinutes: queueStats.estimatedWaitMinutes,
+              traffic: queueStats.trafficLevel,
+            },
+            liveQueue: {
+              patientsWaiting: queueStats.patientsWaiting,
+              estimatedWaitMinutes: queueStats.estimatedWaitMinutes,
+              trafficLevel: queueStats.trafficLevel,
+              nextAvailableSlot: queueStats.nextAvailableSlot,
+              status: doc.status,
+            },
+          };
+        } catch {
+          return {
+            ...doc,
+            id: doc._id.toString(),
+            distanceKm,
+            queue: {
+              patientsAhead: 0,
+              estimatedWaitMinutes: 5,
+              traffic: 'LOW',
+            },
+            liveQueue: {
+              patientsWaiting: 0,
+              estimatedWaitMinutes: 5,
+              trafficLevel: 'LOW',
+              nextAvailableSlot: 'Today 10:00 AM',
+              status: doc.status,
+            },
+          };
+        }
+      })
+    );
+
+    res.json({
+      success: true,
+      count: enrichedDoctors.length,
+      doctors: enrichedDoctors,
+    });
+  } catch (error) {
+    console.error('Error fetching nearby doctors:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve nearby doctors.',
+    });
+  }
+};

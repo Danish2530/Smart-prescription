@@ -1,315 +1,281 @@
 import Dose from '../models/Dose.js';
 
 /**
- * Schedule Service
+ * Get scheduled dose times based on medication frequency.
  *
- * Converts VERIFIED medication details into scheduled Dose records.
- *
- * IMPORTANT:
- * - Never invent medication information.
- * - Never create fixed schedules for PRN/SOS.
- * - Never assume a missing duration.
- * - Never assume an unknown frequency.
+ * Returns an empty array for PRN / As Needed medications
+ * because those doses should not be automatically scheduled.
  */
-class ScheduleService {
-  /**
-   * Determine dose times based on verified frequency
-   */
-  getDoseTimesForFrequency(frequency, instructions = '') {
-    const freq = (frequency || '').toLowerCase().trim();
-    const inst = (instructions || '').toLowerCase().trim();
+const getDoseTimesForFrequency = (frequency, instructions = '') => {
+  const freq = String(frequency || '').toLowerCase().trim();
+  const instructionText = String(instructions || '').toLowerCase().trim();
 
-    if (!freq) {
-      return [];
-    }
-
-    /*
-     * PRN / SOS / As Needed
-     *
-     * These should NOT generate automatic fixed doses.
-     */
-    if (
-      freq.includes('as needed') ||
-      freq.includes('prn') ||
-      freq.includes('sos') ||
-      freq.includes('flexible') ||
-      freq.includes('when required')
-    ) {
-      return [];
-    }
-
-    /*
-     * Three times daily
-     */
-    if (
-      freq.includes('3 times') ||
-      freq.includes('three times') ||
-      freq.includes('tid')
-    ) {
-      return [
-        '08:00 AM',
-        '02:00 PM',
-        '08:00 PM',
-      ];
-    }
-
-    /*
-     * Four times daily
-     */
-    if (
-      freq.includes('4 times') ||
-      freq.includes('four times') ||
-      freq.includes('qid')
-    ) {
-      return [
-        '08:00 AM',
-        '12:00 PM',
-        '04:00 PM',
-        '08:00 PM',
-      ];
-    }
-
-    /*
-     * Twice daily
-     */
-    if (
-      freq.includes('twice') ||
-      freq.includes('2 times') ||
-      freq.includes('bid')
-    ) {
-      return [
-        '08:00 AM',
-        '08:00 PM',
-      ];
-    }
-
-    /*
-     * Once daily
-     */
-    if (
-      freq.includes('once') ||
-      freq.includes('1 time') ||
-      freq === 'daily' ||
-      freq.includes('daily') ||
-      freq.includes('qd')
-    ) {
-      /*
-       * These times are application scheduling defaults,
-       * not AI-generated medical instructions.
-       */
-
-      if (
-        inst.includes('bedtime') ||
-        inst.includes('before bedtime') ||
-        inst.includes('night')
-      ) {
-        return ['09:30 PM'];
-      }
-
-      if (
-        inst.includes('lunch') ||
-        inst.includes('afternoon')
-      ) {
-        return ['01:00 PM'];
-      }
-
-      if (
-        inst.includes('dinner') ||
-        inst.includes('evening')
-      ) {
-        return ['08:00 PM'];
-      }
-
-      /*
-       * Default application time for once-daily
-       * after the user has explicitly verified
-       * "once daily".
-       */
-      return ['08:00 AM'];
-    }
-
-    /*
-     * Unknown frequency:
-     * DO NOT invent a schedule.
-     */
-    console.warn(
-      `[ScheduleService] Unknown frequency: "${frequency}". No automatic doses created.`
-    );
-
+  // PRN / As Needed
+  if (
+    freq.includes('prn') ||
+    freq.includes('as needed') ||
+    freq.includes('sos') ||
+    freq.includes('flexible') ||
+    freq.includes('when required')
+  ) {
     return [];
   }
 
-  /**
-   * Generate scheduled Dose documents
-   */
-  async generateMedicationSchedule(medication) {
-    if (!medication) {
-      throw new Error(
-        'Medication information is required.'
-      );
+  // 3 times daily
+  if (
+    freq.includes('3 times') ||
+    freq.includes('three times') ||
+    freq.includes('tid')
+  ) {
+    return ['08:00 AM', '02:00 PM', '08:00 PM'];
+  }
+
+  // 4 times daily
+  if (
+    freq.includes('4 times') ||
+    freq.includes('four times') ||
+    freq.includes('qid')
+  ) {
+    return ['08:00 AM', '12:00 PM', '04:00 PM', '08:00 PM'];
+  }
+
+  // Twice daily
+  if (
+    freq.includes('twice') ||
+    freq.includes('2 times') ||
+    freq.includes('two times') ||
+    freq.includes('bid')
+  ) {
+    return ['08:00 AM', '08:00 PM'];
+  }
+
+  // Once daily
+  if (
+    freq.includes('once') ||
+    freq.includes('daily') ||
+    freq.includes('qd')
+  ) {
+    if (
+      instructionText.includes('bedtime') ||
+      instructionText.includes('night')
+    ) {
+      return ['09:30 PM'];
     }
-
-    if (!medication.verified) {
-      throw new Error(
-        'Only verified medications can generate active schedules.'
-      );
-    }
-
-    /*
-     * Validate required fields
-     */
-    const requiredFields = [
-      'name',
-      'strength',
-      'doseAmount',
-      'doseUnit',
-      'frequency',
-      'durationValue',
-      'durationUnit',
-    ];
-
-    for (const field of requiredFields) {
-      if (
-        medication[field] === null ||
-        medication[field] === undefined ||
-        medication[field] === ''
-      ) {
-        throw new Error(
-          `Medication field "${field}" is required before generating a schedule.`
-        );
-      }
-    }
-
-    /*
-     * Validate numeric values
-     */
-    const doseAmount = Number(
-      medication.doseAmount
-    );
 
     if (
-      !Number.isFinite(doseAmount) ||
-      doseAmount <= 0
+      instructionText.includes('lunch') ||
+      instructionText.includes('afternoon')
     ) {
-      throw new Error(
-        'Medication dose amount must be a valid positive number.'
-      );
+      return ['01:00 PM'];
     }
-
-    let daysCount = Number(
-      medication.durationValue
-    );
 
     if (
-      !Number.isFinite(daysCount) ||
-      daysCount <= 0
+      instructionText.includes('dinner') ||
+      instructionText.includes('evening')
     ) {
-      throw new Error(
-        'Medication duration must be a valid positive number.'
-      );
+      return ['08:00 PM'];
     }
 
-    /*
-     * Convert duration to days
-     */
-    const unit = String(
-      medication.durationUnit
-    ).toLowerCase();
+    return ['08:00 AM'];
+  }
 
-    if (unit.startsWith('week')) {
-      daysCount *= 7;
-    } else if (unit.startsWith('month')) {
-      daysCount *= 30;
-    }
+  console.warn(
+    `[ScheduleService] Unknown frequency: "${frequency}". No automatic doses created.`
+  );
 
-    /*
-     * Safety/performance cap
-     */
-    daysCount = Math.min(
-      Math.ceil(daysCount),
-      90
-    );
+  return [];
+};
 
-    /*
-     * Determine schedule times
-     */
-    const times =
-      this.getDoseTimesForFrequency(
-        medication.frequency,
-        medication.instructions
-      );
+/**
+ * Convert a date to a clean scheduled date.
+ */
+const createScheduledDate = (startDate, dayOffset) => {
+  const date = new Date(startDate);
 
-    /*
-     * PRN / unknown frequency
-     */
-    if (times.length === 0) {
-      return [];
-    }
+  date.setDate(date.getDate() + dayOffset);
 
-    /*
-     * Start date
-     */
-    const startDate = medication.startDate
-      ? new Date(medication.startDate)
-      : new Date();
+  return date;
+};
 
-    if (Number.isNaN(startDate.getTime())) {
-      throw new Error(
-        'Invalid medication start date.'
-      );
-    }
+/**
+ * Build dose documents in memory.
+ *
+ * IMPORTANT:
+ * This function DOES NOT write to MongoDB.
+ *
+ * It only creates the documents so the controller can combine
+ * doses from all medications and perform ONE bulk insert.
+ */
+const buildMedicationDoseDocuments = (medication) => {
+  if (!medication) {
+    throw new Error('Medication data is required.');
+  }
 
-    startDate.setHours(
-      0,
-      0,
-      0,
-      0
-    );
-
-    /*
-     * Build Dose documents
-     */
-    const dosesToCreate = [];
-
-    for (
-      let dayOffset = 0;
-      dayOffset < daysCount;
-      dayOffset++
-    ) {
-      const currentDate =
-        new Date(startDate);
-
-      currentDate.setDate(
-        startDate.getDate() + dayOffset
-      );
-
-      currentDate.setHours(
-        0,
-        0,
-        0,
-        0
-      );
-
-      for (const timeStr of times) {
-        dosesToCreate.push({
-          patientId: medication.patientId,
-          medicationId: medication._id,
-          scheduledDate: currentDate,
-          scheduledTime: timeStr,
-          status: 'pending',
-          takenAt: null,
-        });
-      }
-    }
-
-    if (dosesToCreate.length === 0) {
-      return [];
-    }
-
-    return await Dose.insertMany(
-      dosesToCreate
+  if (!medication.verified) {
+    throw new Error(
+      `Medication "${medication.name || 'Unknown'}" must be verified before scheduling.`
     );
   }
-}
 
-export default new ScheduleService();
+  const requiredFields = [
+    'name',
+    'strength',
+    'doseAmount',
+    'doseUnit',
+    'frequency',
+    'durationValue',
+    'durationUnit',
+  ];
+
+  for (const field of requiredFields) {
+    if (
+      medication[field] === undefined ||
+      medication[field] === null ||
+      medication[field] === ''
+    ) {
+      throw new Error(
+        `Missing required medication field: ${field}`
+      );
+    }
+  }
+
+  const doseAmount = Number(medication.doseAmount);
+
+  if (!Number.isFinite(doseAmount) || doseAmount <= 0) {
+    throw new Error(
+      `Invalid dose amount for medication "${medication.name}".`
+    );
+  }
+
+  let durationDays = Number(medication.durationValue);
+
+  if (!Number.isFinite(durationDays) || durationDays <= 0) {
+    throw new Error(
+      `Invalid duration for medication "${medication.name}".`
+    );
+  }
+
+  const durationUnit = String(
+    medication.durationUnit || 'days'
+  ).toLowerCase();
+
+  if (
+    durationUnit.includes('week')
+  ) {
+    durationDays *= 7;
+  } else if (
+    durationUnit.includes('month')
+  ) {
+    durationDays *= 30;
+  }
+
+  // Safety cap
+  durationDays = Math.min(
+    Math.ceil(durationDays),
+    90
+  );
+
+  const doseTimes = getDoseTimesForFrequency(
+    medication.frequency,
+    medication.instructions
+  );
+
+  // PRN / unsupported frequency
+  if (!doseTimes.length) {
+    return [];
+  }
+
+  const startDate = new Date(medication.startDate);
+
+  if (Number.isNaN(startDate.getTime())) {
+    throw new Error(
+      `Invalid start date for medication "${medication.name}".`
+    );
+  }
+
+  const doses = [];
+
+  for (let dayOffset = 0; dayOffset < durationDays; dayOffset++) {
+    const scheduledDate = createScheduledDate(
+      startDate,
+      dayOffset
+    );
+
+    for (const scheduledTime of doseTimes) {
+      doses.push({
+        patientId: medication.patientId,
+        medicationId: medication._id,
+        scheduledDate,
+        scheduledTime,
+        status: 'pending',
+      });
+    }
+  }
+
+  return doses;
+};
+
+/**
+ * Generate and save schedule for ONE medication.
+ *
+ * Kept for compatibility with existing code elsewhere.
+ */
+const generateMedicationSchedule = async (medication) => {
+  const doses = buildMedicationDoseDocuments(medication);
+
+  if (!doses.length) {
+    return [];
+  }
+
+  return await Dose.insertMany(doses);
+};
+
+/**
+ * Generate schedules for MULTIPLE medications using ONE database insert.
+ *
+ * This is the optimized method used by prescription verification.
+ */
+const generateBulkMedicationSchedule = async (medications) => {
+  if (!Array.isArray(medications) || medications.length === 0) {
+    return [];
+  }
+
+  const allDoses = [];
+
+  for (const medication of medications) {
+    const medicationDoses =
+      buildMedicationDoseDocuments(medication);
+
+    allDoses.push(...medicationDoses);
+  }
+
+  if (!allDoses.length) {
+    return [];
+  }
+
+  console.log(
+    `[ScheduleService] Bulk inserting ${allDoses.length} doses...`
+  );
+
+  const createdDoses = await Dose.insertMany(
+    allDoses,
+    {
+      ordered: false,
+    }
+  );
+
+  console.log(
+    `[ScheduleService] Created ${createdDoses.length} doses.`
+  );
+
+  return createdDoses;
+};
+
+const scheduleService = {
+  getDoseTimesForFrequency,
+  buildMedicationDoseDocuments,
+  generateMedicationSchedule,
+  generateBulkMedicationSchedule,
+};
+
+export default scheduleService;

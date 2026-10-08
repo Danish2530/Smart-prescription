@@ -1,5 +1,6 @@
 import Prescription from '../models/Prescription.js';
 import Medication from '../models/Medication.js';
+
 import ocrService from '../services/ocrService.js';
 import aiPrescriptionService from '../services/aiPrescriptionService.js';
 import scheduleService from '../services/scheduleService.js';
@@ -7,6 +8,7 @@ import scheduleService from '../services/scheduleService.js';
 // @desc    Upload prescription image & trigger OCR + AI extraction
 // @route   POST /api/prescriptions/upload
 // @access  Private
+
 export const uploadPrescription = async (req, res) => {
   try {
     if (!req.file) {
@@ -20,7 +22,10 @@ export const uploadPrescription = async (req, res) => {
     const filePath = req.file.path;
     const imageUrl = `/uploads/${req.file.filename}`;
 
+    // ---------------------------------------------------------
     // Step 1: OCR
+    // ---------------------------------------------------------
+
     let ocrText = '';
 
     try {
@@ -38,7 +43,10 @@ export const uploadPrescription = async (req, res) => {
       });
     }
 
+    // ---------------------------------------------------------
     // Step 2: Gemini AI extraction
+    // ---------------------------------------------------------
+
     let extractedMedications = [];
 
     try {
@@ -57,7 +65,10 @@ export const uploadPrescription = async (req, res) => {
       });
     }
 
+    // ---------------------------------------------------------
     // Step 3: Save prescription
+    // ---------------------------------------------------------
+
     const prescription = await Prescription.create({
       patientId: req.user._id,
       imageUrl,
@@ -84,9 +95,11 @@ export const uploadPrescription = async (req, res) => {
   }
 };
 
+
 // @desc    Get all prescriptions for logged in patient
 // @route   GET /api/prescriptions
 // @access  Private
+
 export const getPrescriptions = async (req, res) => {
   try {
     const prescriptions =
@@ -115,9 +128,11 @@ export const getPrescriptions = async (req, res) => {
   }
 };
 
+
 // @desc    Get prescription by ID
 // @route   GET /api/prescriptions/:id
 // @access  Private
+
 export const getPrescriptionById = async (
   req,
   res
@@ -155,19 +170,19 @@ export const getPrescriptionById = async (
   }
 };
 
+
 // @desc    Verify prescription and generate medication records + schedule
 // @route   POST /api/prescriptions/:id/verify
 // @access  Private
+
 export const verifyPrescription = async (
   req,
   res
 ) => {
   try {
-    /*
-    |--------------------------------------------------------------------------
-    | Find prescription
-    |--------------------------------------------------------------------------
-    */
+    // ---------------------------------------------------------
+    // Find prescription
+    // ---------------------------------------------------------
 
     const prescription =
       await Prescription.findOne({
@@ -183,11 +198,9 @@ export const verifyPrescription = async (
       });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Validate medications array
-    |--------------------------------------------------------------------------
-    */
+    // ---------------------------------------------------------
+    // Validate medications array
+    // ---------------------------------------------------------
 
     const { medications } = req.body;
 
@@ -203,16 +216,9 @@ export const verifyPrescription = async (
       });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Validate EVERY medication before creating anything
-    |--------------------------------------------------------------------------
-    |
-    | We do this BEFORE saving the prescription or creating Medication
-    | documents. This prevents partially-created prescriptions.
-    |
-    |--------------------------------------------------------------------------
-    */
+    // ---------------------------------------------------------
+    // Validate EVERY medication BEFORE creating anything
+    // ---------------------------------------------------------
 
     for (
       let i = 0;
@@ -223,6 +229,7 @@ export const verifyPrescription = async (
 
       const medicationNumber = i + 1;
 
+      // Medicine name
       if (
         !med.name ||
         typeof med.name !== 'string' ||
@@ -235,6 +242,7 @@ export const verifyPrescription = async (
         });
       }
 
+      // Strength
       if (
         !med.strength ||
         typeof med.strength !== 'string' ||
@@ -247,6 +255,7 @@ export const verifyPrescription = async (
         });
       }
 
+      // Dose amount
       if (
         med.doseAmount === null ||
         med.doseAmount === undefined ||
@@ -274,6 +283,7 @@ export const verifyPrescription = async (
         });
       }
 
+      // Dose unit
       if (
         !med.doseUnit ||
         typeof med.doseUnit !== 'string' ||
@@ -286,6 +296,7 @@ export const verifyPrescription = async (
         });
       }
 
+      // Frequency
       if (
         !med.frequency ||
         typeof med.frequency !== 'string' ||
@@ -298,12 +309,7 @@ export const verifyPrescription = async (
         });
       }
 
-      /*
-      |--------------------------------------------------------------------------
-      | Duration is required for scheduled medication.
-      |--------------------------------------------------------------------------
-      */
-
+      // Duration
       if (
         med.durationValue === null ||
         med.durationValue === undefined ||
@@ -331,6 +337,7 @@ export const verifyPrescription = async (
         });
       }
 
+      // Duration unit
       if (
         !med.durationUnit ||
         typeof med.durationUnit !== 'string' ||
@@ -344,11 +351,9 @@ export const verifyPrescription = async (
       }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Save verified prescription
-    |--------------------------------------------------------------------------
-    */
+    // ---------------------------------------------------------
+    // Save verified prescription
+    // ---------------------------------------------------------
 
     prescription.extractedMedications =
       medications;
@@ -357,104 +362,65 @@ export const verifyPrescription = async (
 
     await prescription.save();
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create verified medications + schedules
-    |--------------------------------------------------------------------------
-    */
+    // ---------------------------------------------------------
+    // Prepare ALL medication documents in memory
+    // ---------------------------------------------------------
 
-    const createdMedications = [];
+    const medicationDocuments =
+      medications.map((med) => {
+        // Start date
+        const startDate = med.startDate
+          ? new Date(med.startDate)
+          : new Date();
 
-    let totalDosesCreated = 0;
+        if (
+          Number.isNaN(
+            startDate.getTime()
+          )
+        ) {
+          throw new Error(
+            `Invalid start date for medication "${med.name}".`
+          );
+        }
 
-    for (const med of medications) {
-      /*
-      |--------------------------------------------------------------------------
-      | Start date
-      |--------------------------------------------------------------------------
-      */
+        // Convert duration to days
+        let durationDays =
+          Number(med.durationValue);
 
-      const startDate = med.startDate
-        ? new Date(med.startDate)
-        : new Date();
+        const unit = String(
+          med.durationUnit
+        ).toLowerCase();
 
-      if (
-        Number.isNaN(
-          startDate.getTime()
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            `Invalid start date for medication "${med.name}".`,
-        });
-      }
+        if (unit.startsWith('week')) {
+          durationDays *= 7;
+        } else if (
+          unit.startsWith('month')
+        ) {
+          durationDays *= 30;
+        }
 
-      /*
-      |--------------------------------------------------------------------------
-      | Convert duration to days for end date
-      |--------------------------------------------------------------------------
-      */
+        // Safety limit
+        durationDays = Math.min(
+          Math.ceil(durationDays),
+          90
+        );
 
-      let durationDays =
-        Number(med.durationValue);
+        // Calculate end date
+        //
+        // Keep the schedule and medication
+        // duration aligned: a 5-day medication
+        // has doses on day 0 through day 4.
+        const endDate =
+          new Date(startDate);
 
-      const unit = String(
-        med.durationUnit
-      ).toLowerCase();
+        endDate.setDate(
+          startDate.getDate() +
+            durationDays -
+            1
+        );
 
-      if (unit.startsWith('week')) {
-        durationDays *= 7;
-      } else if (
-        unit.startsWith('month')
-      ) {
-        durationDays *= 30;
-      }
-
-      /*
-      |--------------------------------------------------------------------------
-      | Safety limit
-      |--------------------------------------------------------------------------
-      */
-
-      durationDays = Math.min(
-        Math.ceil(durationDays),
-        90
-      );
-
-      /*
-      |--------------------------------------------------------------------------
-      | Calculate end date
-      |--------------------------------------------------------------------------
-      */
-
-      const endDate =
-        new Date(startDate);
-
-      endDate.setDate(
-        startDate.getDate() +
-          durationDays
-      );
-
-      /*
-      |--------------------------------------------------------------------------
-      | Create medication
-      |--------------------------------------------------------------------------
-      |
-      | IMPORTANT:
-      | No defaults such as:
-      | - 1 tablet
-      | - once daily
-      | - 5 days
-      |
-      | Everything comes from the verified user input.
-      |--------------------------------------------------------------------------
-      */
-
-      const newMed =
-        await Medication.create({
-          patientId:
-            req.user._id,
+        return {
+          patientId: req.user._id,
 
           prescriptionId:
             prescription._id,
@@ -489,32 +455,49 @@ export const verifyPrescription = async (
           endDate,
 
           verified: true,
-        });
+        };
+      });
 
-      createdMedications.push(
-        newMed
+    // ---------------------------------------------------------
+    // Create ALL medications with ONE MongoDB operation
+    // ---------------------------------------------------------
+
+    console.log(
+      `[Prescription] Creating ${medicationDocuments.length} medications...`
+    );
+
+    const createdMedications =
+      await Medication.insertMany(
+        medicationDocuments
       );
 
-      /*
-      |--------------------------------------------------------------------------
-      | Generate schedule
-      |--------------------------------------------------------------------------
-      */
+    console.log(
+      `[Prescription] Created ${createdMedications.length} medications.`
+    );
 
-      const doses =
-        await scheduleService.generateMedicationSchedule(
-          newMed
-        );
+    // ---------------------------------------------------------
+    // Generate ALL schedules with ONE bulk dose insert
+    // ---------------------------------------------------------
 
-      totalDosesCreated +=
-        doses.length;
-    }
+    console.log(
+      '[Prescription] Generating medication schedule...'
+    );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Success response
-    |--------------------------------------------------------------------------
-    */
+    const createdDoses =
+      await scheduleService.generateBulkMedicationSchedule(
+        createdMedications
+      );
+
+    const totalDosesCreated =
+      createdDoses.length;
+
+    console.log(
+      `[Prescription] Created ${totalDosesCreated} doses.`
+    );
+
+    // ---------------------------------------------------------
+    // Success response
+    // ---------------------------------------------------------
 
     return res.json({
       success: true,
@@ -543,9 +526,11 @@ export const verifyPrescription = async (
   }
 };
 
+
 // @desc    Update draft prescription details
 // @route   PUT /api/prescriptions/:id
 // @access  Private
+
 export const updatePrescription = async (
   req,
   res

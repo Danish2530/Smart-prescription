@@ -93,11 +93,45 @@ const doctorSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        validate: {
+          validator: function (val) {
+            // Optional: if not provided or empty, valid
+            if (!val || val.length === 0) return true;
+            return (
+              Array.isArray(val) &&
+              val.length === 2 &&
+              typeof val[0] === 'number' &&
+              typeof val[1] === 'number' &&
+              val[0] >= -180 &&
+              val[0] <= 180 &&
+              val[1] >= -90 &&
+              val[1] <= 90
+            );
+          },
+          message: 'Coordinates must be valid [longitude, latitude] numbers.',
+        },
+      },
+      address: {
+        type: String,
+        default: '',
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// 2dsphere index for geospatial queries (nearby doctors)
+doctorSchema.index({ location: '2dsphere' });
 
 const Doctor = mongoose.model('Doctor', doctorSchema);
 export default Doctor;

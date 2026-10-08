@@ -259,7 +259,7 @@ export default function BookingModal({ doctor, isOpen, onClose, onSuccess }) {
                   <div>
                     <h4 className="text-xs font-bold text-slate-800">Video Consultation</h4>
                     <p className="text-[11px] text-slate-500">
-                      {doctor.videoConsultationAvailable ? 'Online via PRESCRIPTO' : 'Unavailable'}
+                      {doctor.videoConsultationAvailable ? 'Online via MedSick' : 'Unavailable'}
                     </p>
                   </div>
                 </button>

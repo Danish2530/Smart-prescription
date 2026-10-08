@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getDoctors,
   getSpecializations,
+  getNearbyDoctors,
   getDoctorById,
   getDoctorSlots,
   getMyDoctorProfile,
@@ -15,6 +16,7 @@ const router = express.Router();
 // Public doctor discovery routes
 router.get('/', getDoctors);
 router.get('/specializations', getSpecializations);
+router.get('/nearby', getNearbyDoctors);
 router.get('/me', protect, authorize('doctor', 'admin'), getMyDoctorProfile);
 router.patch('/status', protect, authorize('doctor'), updateDoctorStatus);
 router.put('/profile', protect, authorize('doctor'), updateDoctorProfile);
